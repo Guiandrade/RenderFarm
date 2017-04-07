@@ -3,7 +3,7 @@
 
 a=0
 
-modelFilename="test05.bmp"
+modelFilename="file"
 scene_columns=1000
 scene_rows=500
 window_columns=1000

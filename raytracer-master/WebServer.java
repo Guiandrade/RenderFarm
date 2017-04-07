@@ -34,9 +34,8 @@ public class WebServer {
     }
 
     public static String getParams(String query){
-	// 
         String[] params = query.split("&");
-        String response = "java -Djava.awt.headless=true -cp src raytracer.Main test05.txt ";  
+        String response = "java -Djava.awt.headless=true -cp src raytracer.Main test05.txt test05.bmp ";  
         for (String param : params)  
         {  
             String value = param.split("=")[1];  
