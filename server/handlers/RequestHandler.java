@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpServer;
 
 import java.io.*;
 import java.lang.Runtime;
+import java.util.Date;
 
 
 public class RequestHandler implements HttpHandler {
@@ -13,6 +14,8 @@ public class RequestHandler implements HttpHandler {
     private static String modelName = "";
     private static String urlImage ="cnv-lab-aws-lb-1328451237.eu-west-1.elb.amazonaws.com/image?f=";
     private static int id = 0;
+    private static String finished = "Error";
+    private static String inputParams = "";
         
     @Override
     public void handle(HttpExchange t) throws IOException {
@@ -22,7 +25,9 @@ public class RequestHandler implements HttpHandler {
         if (query != null){
             String command = getParams(query);
             System.out.println("Command: " + command + "\n");
-            response = execCmd(command);
+            String cmdResponse = execCmd(command);
+            response = finished + "\n" + cmdResponse;
+            finished = "Error"; 
         }
 
         t.sendResponseHeaders(200, response.length());
@@ -43,8 +48,11 @@ public class RequestHandler implements HttpHandler {
         if(s.hasNext()){
             next = s.next();
             url  = urlImage + modelName;
-            String finished = "Finished (Id: " + id + ") in: " + next.split(" ")[next.split(" ").length - 1];
-           // System.out.println(finished); TIAGO REVE O QUE QUERES FAZER AQUI SFF
+            String dynamicInfoSplitStr = "########## DYNAMIC INFORMATION #########";
+            String finishedIn = next.split(dynamicInfoSplitStr)[0];
+            createLog(dynamicInfoSplitStr + "\n" + inputParams + next.split(dynamicInfoSplitStr)[1]);
+            inputParams = "";
+            finished = "Finished (Id: " + id + ") in: " + finishedIn.split(" ")[finishedIn.split(" ").length - 1];
             id++;
         	return "OK : Here is the resulting image link = "+url;
         }
@@ -69,7 +77,25 @@ public class RequestHandler implements HttpHandler {
                 response = response + "/home/ec2-user/raytracer-master/"+modelName+".txt /home/ec2-user/raytracer-master/outputs/"+modelName+".bmp ";    
             }
             else{
-                response  = response + value + " "; 
+                response  = response + value + " ";
+                if(i == 1){
+                    inputParams = inputParams + "sc   = " + value + "\n";
+                }
+                else if(i == 2){
+                    inputParams = inputParams + "sr   = " + value + "\n";    
+                }
+                else if(i == 3){
+                    inputParams = inputParams + "wc   = " + value + "\n";
+                }
+                else if(i == 4){
+                    inputParams = inputParams + "wr   = " + value + "\n";
+                }
+                else if(i == 5){
+                    inputParams = inputParams + "coff = " + value + "\n";
+                }
+                else if(i == 6){
+                    inputParams = inputParams + "roff = " + value + "\n";
+                }
             }    
 
            	i++;
@@ -77,4 +103,55 @@ public class RequestHandler implements HttpHandler {
         return response; 
     }
 
+    public static synchronized void createLog(String response) throws SecurityException,IOException {
+
+        String filename = "Metrics.txt";
+        id++;
+        BufferedWriter bw = null;
+        FileWriter fw = null;
+        Date date = new Date();
+        String urlCommand = "curl checkip.amazonaws.com";
+        java.util.Scanner urlScanner = new java.util.Scanner(Runtime.getRuntime().exec(urlCommand).getInputStream()).useDelimiter("\\A");
+        String machine = "";
+        if (urlScanner.hasNext()){
+            machine = urlScanner.next();
+        }
+
+        try {
+
+            String data = "Thread (id: " + id + ") || Machine: " + machine + " " + date.toString() + "\n\n" + response + "\n\n";
+            File file = new File(filename);
+
+            // if file doesnt exists, then create it
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+            // true = append file
+            fw = new FileWriter(file.getAbsoluteFile(), true);
+            bw = new BufferedWriter(fw);
+
+            bw.write(data);
+
+        } catch (IOException e) {
+
+            e.printStackTrace();
+
+        } finally {
+
+            try {
+
+                if (bw != null)
+                    bw.close();
+
+                if (fw != null)
+                    fw.close();
+
+            } catch (IOException ex) {
+
+                ex.printStackTrace();
+
+            }
+        }
+    }
 }
