@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Update the machine
+sudo yum update
+
 # Download and compiling the raytracer folder and creation of output folder for rendered images
 cd
 wget "http://groups.ist.utl.pt/meic-cnv/project/raytracer-master.tgz"
