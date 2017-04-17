@@ -5,7 +5,7 @@ Here's how to run the project:
 
 1. Create a Load Balancer in Amazon AWS - EC2 Management Console;
 2. Create a new linux instance in Amazon AWS - EC2 Management Console;
-3. SSH into the created instance and do the following 3 steps in it
+3. SSH into the created instance and do the following 3 steps in it:
     1. Copy and unzip the "checkpoint_project.zip" file to the instance;
     2. Run the "scriptSetup.sh" placed in /home/ec2-user/server;
     3. Restart the machine;
