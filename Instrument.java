@@ -10,7 +10,7 @@ import java.util.Date;
 public class Instrument {
     
     private static PrintStream out = null;
-    private static int i_count = 0, b_count = 0, m_count = 0;public static double grand_total = 0;
+    private static double i_count = 0, b_count = 0, m_count = 0;public static double grand_total = 0;
     public static double const_total = 0;
     public static double field_total = 0;
     public static double interface_total = 0;
@@ -18,15 +18,15 @@ public class Instrument {
     public static double bytecodes_total = 0;
     public static double bytecodes_partial=0;
 
-    private static int newcount = 0;
-    private static int newarraycount = 0;
-    private static int anewarraycount = 0;
-    private static int multianewarraycount = 0;
+    private static double newcount = 0;
+    private static double newarraycount = 0;
+    private static double anewarraycount = 0;
+    private static double multianewarraycount = 0;
 
-    private static int loadcount = 0;
-    private static int storecount = 0;
-    private static int fieldloadcount = 0;
-    private static int fieldstorecount = 0;
+    private static double loadcount = 0;
+    private static double storecount = 0;
+    private static double fieldloadcount = 0;
+    private static double fieldstorecount = 0;
     private static String metrics = "";
 
     
