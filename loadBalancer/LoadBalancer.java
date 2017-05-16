@@ -45,15 +45,31 @@ public class LoadBalancer {
 
     public static void main(String[] args) throws Exception {
         init();
-        HashSet<String> ipsRetrieved = getInstancesIps();
-        for(String ip : ipsRetrieved){
-        	String response = executePost("http://"+ip+":8000/test");
-        	if((response.split("\n")[0]).equals("Command OK: Load Balancer Health Check / Keep Alive ")){
-        		ips.add(ip);
-        		System.out.println("Ip: "+ip+ " added!");
-        	}
-        	if(response.equals("Time out")){
-        		System.out.println("Time out!");
+        HttpServer server = HttpServer.create(new InetSocketAddress(7556), 0);
+        server.createContext("/r.html", new RequestHandler());
+        server.createContext("/image", new handlers.RetrieveImageHandler());
+        server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool()); //server will run in parallel, non-limited Executor.
+        server.start();
+        System.out.println("Server is ready! \n");
+        healthCheck();
+    }
+
+    static class RequestHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            String query = t.getRequestURI().getQuery();
+        	System.out.println("RequestHandler");
+        	String response = "";
+        	try{
+        		for(String ip : ips){
+	        		response = executePost("http://"+ip+":8000/r.html?"+query);
+	        	}
+	            t.sendResponseHeaders(200, response.length());
+	            OutputStream os = t.getResponseBody();
+	            os.write(response.getBytes());
+	            os.close();
+        	}catch (Exception e){
+        		e.printStackTrace();
         	}
         }
     }
@@ -72,6 +88,20 @@ public class LoadBalancer {
         dynamoDB = new AmazonDynamoDBClient(credentials);
         Region euWest1 = Region.getRegion(Regions.EU_WEST_1);
         dynamoDB.setRegion(euWest1);
+    }
+
+    public static void healthCheck() throws Exception{
+    	HashSet<String> ipsRetrieved = getInstancesIps();
+        for(String ip : ipsRetrieved){
+        	String response = executePost("http://"+ip+":8000/test");
+        	if((response.split("\n")[0]).equals("Command OK: Load Balancer Health Check / Keep Alive ")){
+        		ips.add(ip);
+        		System.out.println("Ip: "+ip+ " added!");
+        	}
+        	if(response.equals("Time out")){
+        		System.out.println("Time out!");
+        	}
+        }
     }
 
     public static String executePost(String url) throws Exception {

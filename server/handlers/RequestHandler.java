@@ -15,25 +15,25 @@ import java.util.Date;
 
 public class RequestHandler implements HttpHandler {
     
-    private static String modelName = "";
     private static String urlImage ="cnv-lab-aws-lb-1328451237.eu-west-1.elb.amazonaws.com/image?f=";
     private static int id = 0;
     private static String finished = "Error";
-    private static String inputParams = "";
+    private static String modelName = "";
+    private static DynamoDB db = null;
         
     @Override
     public void handle(HttpExchange t) throws IOException {
+        Date date1 = new Date();
         String response = "null";
         String query = t.getRequestURI().getQuery();
             
         if (query != null){
             String command = getParams(query);
-            System.out.println("Command: " + command + "\n");
             String cmdResponse = "";
             try{
-                cmdResponse = execCmd(command);
+                cmdResponse = execCmd(command.split("split")[0],command.split("split")[1],date1);
             }catch(Exception e){
-		e.printStackTrace();
+                e.printStackTrace();
             }
             response = finished + "\n" + cmdResponse;
             finished = "Error"; 
@@ -45,13 +45,12 @@ public class RequestHandler implements HttpHandler {
         os.close();
     }
 
-    public static String execCmd(String cmd) throws java.io.IOException, Exception {
+    public static String execCmd(String cmd, String inputParams, Date date1) throws java.io.IOException, Exception {
     	// Executes raytracer with the parameters obtained on the GET request 
     	// and retrieves a link to the created image 
 
        	java.util.Scanner s = new java.util.Scanner(Runtime.getRuntime().exec(cmd).getInputStream()).useDelimiter("\\A");
-	java.util.Scanner x = new java.util.Scanner(Runtime.getRuntime().exec("java -cp /home/ec2-user/server:/home/ec2-user/aws-java-sdk-1.11.117/lib/aws-java-sdk-1.11.117.jar:/home/ec2-user/aws-java-sdk-1.11.117/third-party/lib/* handlers.DynamoDB").getInputStream()).useDelimiter("\\A");
-	String urlCommand = "curl checkip.amazonaws.com";
+        String urlCommand = "curl checkip.amazonaws.com";
         java.util.Scanner urlScanner = new java.util.Scanner(Runtime.getRuntime().exec(urlCommand).getInputStream()).useDelimiter("\\A");
         String next = "";
         String url = "";
@@ -60,8 +59,7 @@ public class RequestHandler implements HttpHandler {
             url  = urlImage + modelName;
             String dynamicInfoSplitStr = "########## DYNAMIC INFORMATION #########";
             String finishedIn = next.split(dynamicInfoSplitStr)[0];
-            createLog(dynamicInfoSplitStr + "\n" + inputParams + next.split(dynamicInfoSplitStr)[1]);
-            inputParams = "";
+            createLog(dynamicInfoSplitStr + "\n" + inputParams + next.split(dynamicInfoSplitStr)[1], inputParams, date1);
             finished = "Finished (Id: " + id + ") in: " + finishedIn.split(" ")[finishedIn.split(" ").length - 1];
             id++;
         	return "OK : Here is the resulting image link = "+url;
@@ -75,10 +73,10 @@ public class RequestHandler implements HttpHandler {
     	// Get parameters from the URL and retrieves the raytracer command that will be executed @ execCms(String cmd)
 
         String envVariables = ":/home/ec2-user/BIT/samples:java -XX:-UseSplitVerifier";
-
         String[] params = query.split("&");
         String response = "java -Djava.awt.headless=true -cp /home/ec2-user/raytracer-master/src" + envVariables + " raytracer.Main ";  
         int i=0;
+        String inputParams = "";
 
         for (String param : params)  
         {  
@@ -108,13 +106,14 @@ public class RequestHandler implements HttpHandler {
                     inputParams = inputParams + "roff = " + value + "\n";
                 }
             }    
-
            	i++;
-        }  
-        return response; 
+        }
+        inputParams = inputParams + modelName;
+        String resp = response + "split" + inputParams;
+        return resp; 
     }
 
-    public static synchronized void createLog(String response) throws SecurityException,IOException,Exception {
+    public static synchronized void createLog(String response, String inputParams, Date date1) throws SecurityException,IOException,Exception {
 
         String filename = "Metrics.txt";
         id++;
@@ -129,21 +128,31 @@ public class RequestHandler implements HttpHandler {
         }
 
         try {
-	    System.out.println(response);
-            Map<String,String> pairs = new DynamoDB().parser(response,inputParams,true,true,true,false,false,false,false,false,false,false,false);
-            Map<String, AttributeValue> item = new DynamoDB().newItem(
+            System.out.println(response);
+
+            Map<String,String> pairs = db.getInstance().parserParams(response,inputParams,true,true,true,false,false,false,false,false,false,false,false);
+            Map<String, AttributeValue> item = db.getInstance().newItemParams(
                 id + " " + machine.split("\n")[0] + " " + date.toString(),
                 machine.split("\n")[0],
+                pairs.get("file"),
                 pairs.get("sc"),
                 pairs.get("sr"),
                 pairs.get("wc"),
                 pairs.get("wr"),
                 pairs.get("coff"),
                 pairs.get("roff"),
-                pairs.get("instructions"),
-                pairs.get("basicBlocks"),
-                pairs.get("methods"));
-            new DynamoDB().addItem(item);
+                pairs.get("instructions"));
+            db.getInstance().addItem(item,"params");
+
+            Date date2 = new Date();
+            long seconds = (date2.getTime()-date1.getTime())/1000;
+            item = db.getInstance().newItemTimes(
+                id + " " + machine.split("\n")[0] + " " + date.toString(),
+                machine.split("\n")[0],
+                response.split("Instructions:   ")[1].split("\n")[0],
+                String.valueOf(seconds));
+            db.getInstance().addItem(item,"times");
+
             String data = "Thread (id: " + id + ") || Machine: " + machine + " " + date.toString() + "\n\n" + response + "\n\n";
             File file = new File(filename);
 
