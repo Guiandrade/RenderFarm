@@ -1,8 +1,12 @@
 package handlers;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 
 import java.io.*;
 import java.lang.Runtime;
@@ -25,7 +29,12 @@ public class RequestHandler implements HttpHandler {
         if (query != null){
             String command = getParams(query);
             System.out.println("Command: " + command + "\n");
-            String cmdResponse = execCmd(command);
+            String cmdResponse = "";
+            try{
+                cmdResponse = execCmd(command);
+            }catch(Exception e){
+		e.printStackTrace();
+            }
             response = finished + "\n" + cmdResponse;
             finished = "Error"; 
         }
@@ -36,12 +45,13 @@ public class RequestHandler implements HttpHandler {
         os.close();
     }
 
-    public static String execCmd(String cmd) throws java.io.IOException {
+    public static String execCmd(String cmd) throws java.io.IOException, Exception {
     	// Executes raytracer with the parameters obtained on the GET request 
     	// and retrieves a link to the created image 
 
        	java.util.Scanner s = new java.util.Scanner(Runtime.getRuntime().exec(cmd).getInputStream()).useDelimiter("\\A");
-        String urlCommand = "curl checkip.amazonaws.com";
+	java.util.Scanner x = new java.util.Scanner(Runtime.getRuntime().exec("java -cp /home/ec2-user/server:/home/ec2-user/aws-java-sdk-1.11.117/lib/aws-java-sdk-1.11.117.jar:/home/ec2-user/aws-java-sdk-1.11.117/third-party/lib/* handlers.DynamoDB").getInputStream()).useDelimiter("\\A");
+	String urlCommand = "curl checkip.amazonaws.com";
         java.util.Scanner urlScanner = new java.util.Scanner(Runtime.getRuntime().exec(urlCommand).getInputStream()).useDelimiter("\\A");
         String next = "";
         String url = "";
@@ -65,6 +75,7 @@ public class RequestHandler implements HttpHandler {
     	// Get parameters from the URL and retrieves the raytracer command that will be executed @ execCms(String cmd)
 
         String envVariables = ":/home/ec2-user/BIT/samples:java -XX:-UseSplitVerifier";
+
         String[] params = query.split("&");
         String response = "java -Djava.awt.headless=true -cp /home/ec2-user/raytracer-master/src" + envVariables + " raytracer.Main ";  
         int i=0;
@@ -103,7 +114,7 @@ public class RequestHandler implements HttpHandler {
         return response; 
     }
 
-    public static synchronized void createLog(String response) throws SecurityException,IOException {
+    public static synchronized void createLog(String response) throws SecurityException,IOException,Exception {
 
         String filename = "Metrics.txt";
         id++;
@@ -118,7 +129,21 @@ public class RequestHandler implements HttpHandler {
         }
 
         try {
-
+	    System.out.println(response);
+            Map<String,String> pairs = new DynamoDB().parser(response,inputParams,true,true,true,false,false,false,false,false,false,false,false);
+            Map<String, AttributeValue> item = new DynamoDB().newItem(
+                id + " " + machine.split("\n")[0] + " " + date.toString(),
+                machine.split("\n")[0],
+                pairs.get("sc"),
+                pairs.get("sr"),
+                pairs.get("wc"),
+                pairs.get("wr"),
+                pairs.get("coff"),
+                pairs.get("roff"),
+                pairs.get("instructions"),
+                pairs.get("basicBlocks"),
+                pairs.get("methods"));
+            new DynamoDB().addItem(item);
             String data = "Thread (id: " + id + ") || Machine: " + machine + " " + date.toString() + "\n\n" + response + "\n\n";
             File file = new File(filename);
 
