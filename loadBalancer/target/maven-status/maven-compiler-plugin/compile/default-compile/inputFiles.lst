@@ -1,3 +1,3 @@
-/home/guiandrade/Desktop/CNV/RenderFarm/loadBalancer/src/main/java/com/ist/cnv/LoadBalancer.java
-/home/guiandrade/Desktop/CNV/RenderFarm/loadBalancer/src/main/java/com/ist/cnv/dynamoDB/DynamoDB.java
-/home/guiandrade/Desktop/CNV/RenderFarm/loadBalancer/src/main/java/com/ist/cnv/handlers/RetrieveImageHandler.java
+/home/guiandrade/Desktop/CNV/loadBalancer/src/main/java/com/ist/cnv/dynamoDB/DynamoDB.java
+/home/guiandrade/Desktop/CNV/loadBalancer/src/main/java/com/ist/cnv/handlers/RetrieveImageHandler.java
+/home/guiandrade/Desktop/CNV/loadBalancer/src/main/java/com/ist/cnv/LoadBalancer.java

@@ -69,10 +69,10 @@ public class DynamoDB {
         dynamoDB = new AmazonDynamoDBClient(credentials);
         Region euWest1 = Region.getRegion(Regions.EU_WEST_1);
         dynamoDB.setRegion(euWest1);
-        System.out.println("INIT");
+        System.out.println("Finished DynamoDB setup!\n");
     }
 
-    private static void printASE(AmazonServiceException ase){
+    public static void printASE(AmazonServiceException ase){
         ase.printStackTrace();
         System.out.println("Caught an AmazonServiceException, which means your request made it "
                 + "to AWS, but was rejected with an error response for some reason.");
@@ -83,7 +83,7 @@ public class DynamoDB {
         System.out.println("Request ID:       " + ase.getRequestId());
     }
 
-    private static void printACE(AmazonClientException ace){
+    public static void printACE(AmazonClientException ace){
         ace.printStackTrace();
         System.out.println("Caught an AmazonClientException, which means the client encountered "
                 + "a serious internal problem while trying to communicate with AWS, "
@@ -91,7 +91,7 @@ public class DynamoDB {
         System.out.println("Error Message: " + ace.getMessage());
     }
 
-    public static void scan(String tableName){
+    public static ScanResult scan(String tableName){
     try {
         // Scan items for runs with methods greater than 1
         HashMap<String, Condition> scanFilter = new HashMap<String, Condition>();
@@ -101,12 +101,13 @@ public class DynamoDB {
         scanFilter.put("instructions", condition);
         ScanRequest scanRequest = new ScanRequest(tableName).withScanFilter(scanFilter);
         ScanResult scanResult = dynamoDB.scan(scanRequest);
-        System.out.println("Result: " + scanResult);
-
+        return scanResult;
     } catch (AmazonServiceException ase) {
         printASE(ase);
+        return null;
     } catch (AmazonClientException ace) {
         printACE(ace);
+        return null;
     }
 }
 

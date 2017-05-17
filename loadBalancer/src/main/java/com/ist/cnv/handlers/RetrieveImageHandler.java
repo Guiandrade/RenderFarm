@@ -12,7 +12,8 @@ import java.nio.file.Files;
 import java.awt.image.BufferedImage;
 
 public class RetrieveImageHandler implements HttpHandler {
-        
+  static int TIMEOUT = 20;
+
         @Override
         public void handle(HttpExchange t) throws IOException {
 
@@ -23,7 +24,7 @@ public class RetrieveImageHandler implements HttpHandler {
 		File file = new File(path);
 		t.getResponseHeaders().set("Content-Type","image/bmp");
 		t.sendResponseHeaders(200, file.length());
-		
+
 		OutputStream outputStream=t.getResponseBody();
 		Files.copy(file.toPath(), outputStream);
 		outputStream.close();
@@ -33,7 +34,7 @@ public class RetrieveImageHandler implements HttpHandler {
         	// Retrieves only parameter sent on URL
 
         	String[] params = query.split("=");
-        	String value = params[1];  
+        	String value = params[1];
         	return value;
         }
 }

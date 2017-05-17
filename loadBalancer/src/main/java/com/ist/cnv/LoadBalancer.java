@@ -1,9 +1,6 @@
 package com.ist.cnv;
 
 import java.net.InetSocketAddress;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
@@ -28,6 +25,7 @@ import com.amazonaws.services.cloudwatch.model.Datapoint;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsResult;
 import com.amazonaws.services.ec2.model.DescribeAvailabilityZonesResult;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,43 +35,41 @@ import java.util.Set;
 import java.io.*;
 import java.net.*;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
 public class LoadBalancer {
 
 	static AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
-	static HashSet<String> ips = new HashSet<String>();
 	static int TIMEOUT = 20;
+	static HashSet<String> ips = new HashSet<String>();
 
 	public static void main(String[] args) throws Exception {
 		HttpServer server = HttpServer.create(new InetSocketAddress(7556), 0);
-		server.createContext("/r.html", new RequestHandler());
+		server.createContext("/r.html", new com.ist.cnv.handlers.RequestHandler());
 		server.createContext("/image", new com.ist.cnv.handlers.RetrieveImageHandler());
 		server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool()); //server will run in parallel, non-limited Executor.
 		server.start();
 		System.out.println("Server is ready! \n");
 		healthCheck();
-		com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params");
-	}
-
-	static class RequestHandler implements HttpHandler {
-		@Override
-		public void handle(HttpExchange t) throws IOException {
-			String query = t.getRequestURI().getQuery();
-			System.out.println("RequestHandler");
-			String response = "";
-			try{
-				for(String ip : ips){
-					response = executePost("http://"+ip+":8000/r.html?"+query);
+		List<Map<String,AttributeValue>> list = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params").getItems();
+		for(Map<String,AttributeValue> map : list){
+			for(String str : map.keySet()){
+				if (str.equals("file")){
+					System.out.println("Key : "+str+ " Value: "+map.get(str).getS());
 				}
-				t.sendResponseHeaders(200, response.length());
-				OutputStream os = t.getResponseBody();
-				os.write(response.getBytes());
-				os.close();
-			}catch (Exception e){
-				e.printStackTrace();
+				else if(str.equals("machine Value") || str.equals("id")){
+					break;
+				}
+				else{
+					System.out.println("Key : "+str+ " Value: "+map.get(str).getN());
+				}
 			}
+			System.out.println("\n End Row \n ");
 		}
 	}
+
 
 	public static void healthCheck() throws Exception{
 		HashSet<String> ipsRetrieved = getInstancesIps();
@@ -129,7 +125,7 @@ public class LoadBalancer {
 				}
 			}
 		}catch (AmazonServiceException ase){
-			printASE(ase);
+			com.ist.cnv.dynamoDB.DynamoDB.getInstance().printASE(ase);
 		}catch (Exception e){
 			e.printStackTrace();
 		}
@@ -137,22 +133,4 @@ public class LoadBalancer {
 		return ips;
 	}
 
-	private static void printASE(AmazonServiceException ase){
-		ase.printStackTrace();
-		System.out.println("Caught an AmazonServiceException, which means your request made it "
-		+ "to AWS, but was rejected with an error response for some reason.");
-		System.out.println("Error Message:    " + ase.getMessage());
-		System.out.println("HTTP Status Code: " + ase.getStatusCode());
-		System.out.println("AWS Error Code:   " + ase.getErrorCode());
-		System.out.println("Error Type:       " + ase.getErrorType());
-		System.out.println("Request ID:       " + ase.getRequestId());
-	}
-
-	private static void printACE(AmazonClientException ace){
-		ace.printStackTrace();
-		System.out.println("Caught an AmazonClientException, which means the client encountered "
-		+ "a serious internal problem while trying to communicate with AWS, "
-		+ "such as not being able to access the network.");
-		System.out.println("Error Message: " + ace.getMessage());
-	}
 }
