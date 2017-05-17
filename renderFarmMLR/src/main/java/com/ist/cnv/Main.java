@@ -12,7 +12,7 @@ public class Main {
     7	          1	    1	    29
     6	          1	    0	    23
     2	          0   	0	    20
-    3         	0	    1	    21
+    3         	  0	    1	    21
 		
 */
 
@@ -28,7 +28,7 @@ public class Main {
 	public static void getBetasAndResults(Matrix betas){
 		System.out.println("\n--- Values obtained for the betas ---");
 		double[] betaValues =new double[betas.getNrows()+1];
-		for(int i=0;i<betas.getNrows();i++){
+		for(int i=0;i<betas.getNrows();i++){	
 			System.out.println("b"+i+" : "+betas.getValueAt(i,0));
 			betaValues[i]=betas.getValueAt(i,0);
 		}

@@ -63,7 +63,7 @@ public class LoadBalancer {
 
 	public static double getNumEstimate() throws NoSquareException{
 		List<Map<String,AttributeValue>> list = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params").getItems();
-		double[][] paramValues = new double [list.size()][6];
+		double[][] paramValues = new double [list.size()][3];
 		double[][] instructionsValues = new double [list.size()][1];
 		int i=0;
 		for(Map<String,AttributeValue> map : list){
@@ -72,14 +72,36 @@ public class LoadBalancer {
 				if(str.equals("id") || str.equals("file")){
 					continue;
 				}
-				else if (!str.equals("instructions")){
-					System.out.println("Key : "+str+ " Value: "+map.get(str).getN());
-					paramValues[i][j]=Double.valueOf(map.get(str).getN())+getRandomDouble();
+				else if (str.equals("sc") || str.equals("coff")){
+					if(paramValues[i][0] != 0){
+						paramValues[i][0]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+					else{
+						paramValues[i][0]=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+					System.out.println("Key : "+str+ " Value: "+paramValues[i][j]);
 				}
+				else if(str.equals("roff") || str.equals("wr")){
+					if(paramValues[i][1] != 0){
+						paramValues[i][1]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+					else{
+						paramValues[i][1]=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+				}
+				else if(str.equals("wc") || str.equals("sr")){
+					if(paramValues[i][2]!= 0){
+						paramValues[i][2]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+					else{
+						paramValues[i][2]=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+				}
+
 				else{
 					// add number of instructions
 					instructionsValues[i][0]=Double.valueOf(map.get(str).getN())+getRandomDouble();
-					j--;
+					if(j!=0){j--;}
 				}
 				j++;
 			}
@@ -102,13 +124,17 @@ public class LoadBalancer {
 		Matrix betas = ml.calculate();
 
 		System.out.println("\n--- Values obtained for the betas ---");
-		long[] betaValues =new long[betas.getNrows()+1];
+		long[] betaValues =new long[betas.getNrows()];
 		for(int k=0;k<betas.getNrows();k++){
 			Double num = betas.getValueAt(k,0);
 			System.out.println("b"+k+" : "+num.longValue());
 			betaValues[k]=num.longValue();
 		}
 		System.out.println("--- End of betas ---\n");
+
+		long result = betaValues[0]+betaValues[1]*(80*30)+betaValues[2]*(30*40)+betaValues[3]*(80*40);
+		System.out.println("Result : "+result+"\n");
+		System.out.println("Real Result : 19919250");
 
 		// will return Estimate Num Instructions
 		return 0;
@@ -177,10 +203,11 @@ public class LoadBalancer {
 	}
 
 	public static double getRandomDouble() {
-		double leftLimit = 0.01;
-		double rightLimit = 0.1;
+		double leftLimit = 0.1;
+		double rightLimit = 0.2;
 		double generatedDouble = leftLimit + new Random().nextDouble() * (rightLimit - leftLimit);
 		return generatedDouble;
 	}
+
 
 }
