@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
 import java.io.*;
 import java.net.*;
 
@@ -53,23 +54,40 @@ public class LoadBalancer {
 		server.start();
 		System.out.println("Server is ready! \n");
 		healthCheck();
-		List<Map<String,AttributeValue>> list = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params").getItems();
-		for(Map<String,AttributeValue> map : list){
-			for(String str : map.keySet()){
-				if (str.equals("file")){
-					System.out.println("Key : "+str+ " Value: "+map.get(str).getS());
-				}
-				else if(str.equals("machine Value") || str.equals("id")){
-					break;
-				}
-				else{
-					System.out.println("Key : "+str+ " Value: "+map.get(str).getN());
-				}
-			}
-			System.out.println("\n End Row \n ");
-		}
+		getNumEstimate();
 	}
 
+	public static double getNumEstimate(){
+		List<Map<String,AttributeValue>> list = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params").getItems();
+		List<List<Double> > params = new ArrayList<List<Double> >();
+		List<List<Double> > instructions = new ArrayList<List<Double> >();
+
+		for(Map<String,AttributeValue> map : list){
+			List<Double> paramsList = new ArrayList<Double>();
+			List<Double> instructionsList = new ArrayList<Double>();
+			for(String str : map.keySet()){
+ 				if(str.equals("id")){
+					continue;
+				}
+				else if (!str.equals("instructions")){
+					System.out.println("Key : "+str+ " Value: "+map.get(str).getN());
+				}
+				else{
+					// add number of instructions
+					System.out.println("Key : "+str+ " Value: "+map.get(str).getN());
+					instructionsList.add(Double.parseDouble(map.get(str).getN()));
+				}
+			}
+			//instructions.add(instructionsList);
+			//params.add(paramsList);
+			System.out.println("\n End Row \n ");
+		}
+		//Matrix paramsMatrix = new Matrix(new double[][]{{4,0,1},{7,1,1},{6,1,0},{2,0,0},{3,0,1}});
+		//Matrix instructionsMatrix = new Matrix(new double[][]{{27},{29},{23},{20},{21}});
+
+		// will return Estimate Num Instructions
+		return 0;
+	}
 
 	public static void healthCheck() throws Exception{
 		HashSet<String> ipsRetrieved = getInstancesIps();

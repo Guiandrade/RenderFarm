@@ -1,5 +1,7 @@
 package com.ist.cnv;
 
+import java.util.List;
+import java.util.ArrayList;
 
 public class Main {
 
@@ -33,7 +35,16 @@ public class Main {
 		System.out.println("--- End of betas ---\n");
 		System.out.println("--- Estimated parameters ---");
 
-		double[][] variables = new double[][]{{4,0,1},{7,1,1},{6,1,0},{2,0,0},{3,0,1}};
+		List<Double> paramsList = new ArrayList<Double>();
+		double four = 4;
+		double zero = 0;
+		double one = 1;
+		paramsList.add(four);
+		paramsList.add(zero);
+		paramsList.add(one);
+
+		double[] array = getDoubleArray(paramsList);
+		double[][] variables = new double[][]{array,{7,1,1},{6,1,0},{2,0,0},{3,0,1}};
 		int variablesNrows = 5;
 		for(int j=0; j<variablesNrows;j++){
 				double result = betaValues[0] + betaValues[1]*variables[j][0] + betaValues[2]*variables[j][1]+ betaValues[3]*variables[j][2];
@@ -41,6 +52,14 @@ public class Main {
 		}
 		System.out.println("--- End of Estimated parameters ---\n");
 
+	}
+
+	public static double[] getDoubleArray(List<Double> list){
+		double[] target = new double[list.size()];
+ 		for (int i = 0; i < target.length; i++) {
+    		target[i] = list.get(i); 		
+    	}
+    	return target;
 	}
 
 }
