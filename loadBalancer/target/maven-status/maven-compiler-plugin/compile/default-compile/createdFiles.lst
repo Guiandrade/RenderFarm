@@ -1,4 +1,9 @@
-com/ist/cnv/dynamoDB/DynamoDB.class
-com/ist/cnv/handlers/RetrieveImageHandler.class
+com/ist/cnv/matrixes/MultiLinear.class
+com/ist/cnv/matrixes/Matrix.class
+com/ist/cnv/matrixes/MatrixMathematics.class
+com/ist/cnv/matrixes/IllegalDimensionException.class
 com/ist/cnv/handlers/RequestHandler.class
 com/ist/cnv/LoadBalancer.class
+com/ist/cnv/matrixes/NoSquareException.class
+com/ist/cnv/dynamoDB/DynamoDB.class
+com/ist/cnv/handlers/RetrieveImageHandler.class

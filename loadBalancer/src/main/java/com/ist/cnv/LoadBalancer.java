@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.Random;
 import java.io.*;
 import java.net.*;
 
@@ -40,16 +41,19 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
+import com.ist.cnv.handlers.*;
+import com.ist.cnv.matrixes.*;
+
 public class LoadBalancer {
 
 	static AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 	static int TIMEOUT = 20;
 	static HashSet<String> ips = new HashSet<String>();
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception,NoSquareException {
 		HttpServer server = HttpServer.create(new InetSocketAddress(7556), 0);
-		server.createContext("/r.html", new com.ist.cnv.handlers.RequestHandler());
-		server.createContext("/image", new com.ist.cnv.handlers.RetrieveImageHandler());
+		server.createContext("/r.html", new RequestHandler());
+		server.createContext("/image", new RetrieveImageHandler());
 		server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool()); //server will run in parallel, non-limited Executor.
 		server.start();
 		System.out.println("Server is ready! \n");
@@ -57,34 +61,54 @@ public class LoadBalancer {
 		getNumEstimate();
 	}
 
-	public static double getNumEstimate(){
+	public static double getNumEstimate() throws NoSquareException{
 		List<Map<String,AttributeValue>> list = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params").getItems();
-		double[][] paramValues = new double [list.size()][8];
+		double[][] paramValues = new double [list.size()][6];
 		double[][] instructionsValues = new double [list.size()][1];
 		int i=0;
 		for(Map<String,AttributeValue> map : list){
 			int j=0;
 			for(String str : map.keySet()){
- 				if(str.equals("id")){
+				if(str.equals("id") || str.equals("file")){
 					continue;
 				}
 				else if (!str.equals("instructions")){
 					System.out.println("Key : "+str+ " Value: "+map.get(str).getN());
-					instructionsValues[i][0]=Double.parseDouble(map.get(str).getN());
+					paramValues[i][j]=Double.valueOf(map.get(str).getN())+getRandomDouble();
 				}
 				else{
 					// add number of instructions
-					System.out.println("Key : "+str+ " Value: "+map.get(str).getN());
-					paramValues[i][j]=Double.parseDouble(map.get(str).getN());
-
+					instructionsValues[i][0]=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					j--;
 				}
+				j++;
 			}
-			j++;
 			System.out.println("\n End Row \n ");
 			i++;
 		}
-		//Matrix paramsMatrix = new Matrix(new double[][]{{4,0,1},{7,1,1},{6,1,0},{2,0,0},{3,0,1}});
-		//Matrix instructionsMatrix = new Matrix(new double[][]{{27},{29},{23},{20},{21}});
+
+		System.out.println("Values of paramsMatrix : "+paramValues+"\n");
+		System.out.println("Values of instructionsMatrix : "+instructionsValues +"\n");
+
+
+		Matrix paramMatrix = new Matrix(paramValues);
+
+		Matrix instructionsMatrix = new Matrix(instructionsValues);
+
+		System.out.println("Num linhas paramMatrix : "+paramMatrix.getNrows()+ " Num colunas paramMatrix : "+paramMatrix.getNcols()+"\n");
+		System.out.println("Num linhas instructionsMatrix : "+instructionsMatrix.getNrows()+ " Num colunas paramMatrix : "+instructionsMatrix.getNcols()+"\n");
+
+		MultiLinear ml = new MultiLinear(paramMatrix, instructionsMatrix);
+		Matrix betas = ml.calculate();
+
+		System.out.println("\n--- Values obtained for the betas ---");
+		long[] betaValues =new long[betas.getNrows()+1];
+		for(int k=0;k<betas.getNrows();k++){
+			Double num = betas.getValueAt(k,0);
+			System.out.println("b"+k+" : "+num.longValue());
+			betaValues[k]=num.longValue();
+		}
+		System.out.println("--- End of betas ---\n");
 
 		// will return Estimate Num Instructions
 		return 0;
@@ -150,6 +174,13 @@ public class LoadBalancer {
 		}
 
 		return ips;
+	}
+
+	public static double getRandomDouble() {
+		double leftLimit = 0.01;
+		double rightLimit = 0.1;
+		double generatedDouble = leftLimit + new Random().nextDouble() * (rightLimit - leftLimit);
+		return generatedDouble;
 	}
 
 }
