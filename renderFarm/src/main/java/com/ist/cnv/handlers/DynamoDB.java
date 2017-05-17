@@ -1,4 +1,4 @@
-package handlers;
+package com.ist.cnv.handlers;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -69,12 +69,10 @@ public class DynamoDB {
         dynamoDB = new AmazonDynamoDBClient(credentials);
         Region euWest1 = Region.getRegion(Regions.EU_WEST_1);
         dynamoDB.setRegion(euWest1);
-        System.out.println("INIT");
     }
 
     public static void addItem(Map<String, AttributeValue> item, String tableName) throws Exception{
         try {
-            init();
             PutItemRequest putItemRequest = new PutItemRequest(tableName, item);
             PutItemResult putItemResult = dynamoDB.putItem(putItemRequest);
         } catch (AmazonServiceException ase) {
@@ -84,11 +82,10 @@ public class DynamoDB {
         }
     }
 
-    public static Map<String, AttributeValue> newItemParams(String id, String machine, String file, String sc, String sr, String wc, String wr, String coff, String roff, String instructions) {
+    public static Map<String, AttributeValue> newItemParams(String id, String file, String sc, String sr, String wc, String wr, String coff, String roff, String instructions) {
         Map<String, AttributeValue> item = new HashMap<String, AttributeValue>();
         item.put("id", new AttributeValue(id));
-        item.put("machine", new AttributeValue(machine));
-        item.put("file", new AttributeValue(file));
+        item.put("file", new AttributeValue().withN(file));
         item.put("sc", new AttributeValue().withN(sc));
         item.put("sr", new AttributeValue().withN(sr));
         item.put("wc", new AttributeValue().withN(wc));
@@ -99,12 +96,11 @@ public class DynamoDB {
         return item;
     }
 
-    public static Map<String, AttributeValue> newItemTimes(String id, String machine, String instructions, String time) {
+    public static Map<String, AttributeValue> newItemTimes(String id, String instructions, String time) {
         Map<String, AttributeValue> item = new HashMap<String, AttributeValue>();
         item.put("id", new AttributeValue(id));
-        item.put("machine", new AttributeValue(machine));
         item.put("instructions", new AttributeValue().withN(instructions));
-        item.put("date", new AttributeValue().withN(time));
+        item.put("time", new AttributeValue().withN(time));
         return item;
     }
 
@@ -117,7 +113,7 @@ public class DynamoDB {
         pairs.put("wr",inputParams.split("\n")[3].split("wr   = ")[1]);
         pairs.put("coff",inputParams.split("\n")[4].split("coff = ")[1]);
         pairs.put("roff",inputParams.split("\n")[5].split("roff = ")[1]);
-        pairs.put("file",inputParams.split("\n")[6]);
+        pairs.put("file",inputParams.split("\n")[6].split("test0")[1]);
         if(instructions==true){
             pairs.put("instructions",response.split("Instructions:   ")[1].split("\n")[0]);
         }

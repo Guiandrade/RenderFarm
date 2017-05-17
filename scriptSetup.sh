@@ -24,11 +24,6 @@ rm Instrument.java
 source /home/ec2-user/BIT/java-config.sh
 javac /home/ec2-user/BIT/samples/*.java
 
-# Compile the WebServer class and handlers
-cd
-javac /home/ec2-user/server/handlers/*.java
-javac /home/ec2-user/server/WebServer.java
-
 # Use our Istrument function to instrument raytracer
 cd /home/ec2-user/raytracer-master/src/raytracer
 java Instrument .
@@ -38,5 +33,9 @@ cd /home/ec2-user/raytracer-master/src/raytracer/shapes
 java Instrument .
 cd
 
+# Generate the Web Server jar
+cd /home/ec2-user/renderFarm
+mvn clean compile assembly:single
+
 # Put the following command in /etc/rc.local to start the server on machine startup
-echo "java -cp /home/ec2-user/server WebServer" | sudo tee -a /etc/rc.local
+echo "java -cp /home/ec2-user/renderFarm/target/renderFarm-1.0-SNAPSHOT-jar-with-dependencies.jar com.ist.cnv.WebServer" | sudo tee -a /etc/rc.local

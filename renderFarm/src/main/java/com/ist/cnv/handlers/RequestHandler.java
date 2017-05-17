@@ -1,4 +1,4 @@
-package handlers;
+package com.ist.cnv.handlers;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -133,7 +133,6 @@ public class RequestHandler implements HttpHandler {
             Map<String,String> pairs = db.getInstance().parserParams(response,inputParams,true,true,true,false,false,false,false,false,false,false,false);
             Map<String, AttributeValue> item = db.getInstance().newItemParams(
                 id + " " + machine.split("\n")[0] + " " + date.toString(),
-                machine.split("\n")[0],
                 pairs.get("file"),
                 pairs.get("sc"),
                 pairs.get("sr"),
@@ -148,7 +147,6 @@ public class RequestHandler implements HttpHandler {
             long seconds = (date2.getTime()-date1.getTime())/1000;
             item = db.getInstance().newItemTimes(
                 id + " " + machine.split("\n")[0] + " " + date.toString(),
-                machine.split("\n")[0],
                 response.split("Instructions:   ")[1].split("\n")[0],
                 String.valueOf(seconds));
             db.getInstance().addItem(item,"times");
