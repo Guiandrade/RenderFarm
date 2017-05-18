@@ -67,21 +67,19 @@ public class LoadBalancer {
 		double[][] instructionsValues = new double [list.size()][1];
 		int i=0;
 		for(Map<String,AttributeValue> map : list){
-			int j=0;
 			for(String str : map.keySet()){
 				if(str.equals("id") || str.equals("file")){
 					continue;
 				}
-				else if (str.equals("sc") || str.equals("coff")){
+				else if (str.equals("sc") || str.equals("sr")){
 					if(paramValues[i][0] != 0){
 						paramValues[i][0]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
 					}
 					else{
 						paramValues[i][0]=Double.valueOf(map.get(str).getN())+getRandomDouble();
 					}
-					System.out.println("Key : "+str+ " Value: "+paramValues[i][j]);
 				}
-				else if(str.equals("roff") || str.equals("wr")){
+				else if(str.equals("wc") || str.equals("wr")){
 					if(paramValues[i][1] != 0){
 						paramValues[i][1]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
 					}
@@ -89,7 +87,7 @@ public class LoadBalancer {
 						paramValues[i][1]=Double.valueOf(map.get(str).getN())+getRandomDouble();
 					}
 				}
-				else if(str.equals("wc") || str.equals("sr")){
+				else if(str.equals("coff") || str.equals("roff")){
 					if(paramValues[i][2]!= 0){
 						paramValues[i][2]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
 					}
@@ -101,9 +99,7 @@ public class LoadBalancer {
 				else{
 					// add number of instructions
 					instructionsValues[i][0]=Double.valueOf(map.get(str).getN())+getRandomDouble();
-					if(j!=0){j--;}
 				}
-				j++;
 			}
 			System.out.println("\n End Row \n ");
 			i++;
@@ -132,9 +128,9 @@ public class LoadBalancer {
 		}
 		System.out.println("--- End of betas ---\n");
 
-		long result = betaValues[0]+betaValues[1]*(80*30)+betaValues[2]*(30*40)+betaValues[3]*(80*40);
+		long result = betaValues[0]+betaValues[1]*(800*400)+betaValues[2]*(800*400)+betaValues[3]*(60*60);
 		System.out.println("Result : "+result+"\n");
-		System.out.println("Real Result : 19919250");
+		System.out.println("Real Result : 2789915305");
 
 		// will return Estimate Num Instructions
 		return 0;
