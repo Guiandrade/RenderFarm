@@ -33,9 +33,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.ArrayList;
-import java.util.Random;
 import java.io.*;
 import java.net.*;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -49,6 +50,8 @@ public class LoadBalancer {
 	static AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 	static int TIMEOUT = 20;
 	static HashSet<String> ips = new HashSet<String>();
+	static private ConcurrentHashMap<String,Long> paramsMap = new ConcurrentHashMap<String,Long>();
+
 
 	public static void main(String[] args) throws Exception,NoSquareException {
 		HttpServer server = HttpServer.create(new InetSocketAddress(7556), 0);
@@ -58,83 +61,12 @@ public class LoadBalancer {
 		server.start();
 		System.out.println("Server is ready! \n");
 		healthCheck();
-		getNumEstimate();
+		String query = "http://cnv-lab-aws-lb-1328451237.eu-west-1.elb.amazonaws.com/r.html?f=test05&sc=1000&sr=500&wc=1000&wr=500&coff=40&roff=40";
+		getParams(query);
+		long estimatedInstructions = getNumEstimatedInstructions();
+		getEstimatedTime(estimatedInstructions);
 	}
 
-	public static double getNumEstimate() throws NoSquareException{
-		List<Map<String,AttributeValue>> list = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params").getItems();
-		double[][] paramValues = new double [list.size()][3];
-		double[][] instructionsValues = new double [list.size()][1];
-		int i=0;
-		for(Map<String,AttributeValue> map : list){
-			for(String str : map.keySet()){
-				if(str.equals("id") || str.equals("file")){
-					continue;
-				}
-				else if (str.equals("sc") || str.equals("sr")){
-					if(paramValues[i][0] != 0){
-						paramValues[i][0]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
-					}
-					else{
-						paramValues[i][0]=Double.valueOf(map.get(str).getN())+getRandomDouble();
-					}
-				}
-				else if(str.equals("wc") || str.equals("wr")){
-					if(paramValues[i][1] != 0){
-						paramValues[i][1]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
-					}
-					else{
-						paramValues[i][1]=Double.valueOf(map.get(str).getN())+getRandomDouble();
-					}
-				}
-				else if(str.equals("coff") || str.equals("roff")){
-					if(paramValues[i][2]!= 0){
-						paramValues[i][2]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
-					}
-					else{
-						paramValues[i][2]=Double.valueOf(map.get(str).getN())+getRandomDouble();
-					}
-				}
-
-				else{
-					// add number of instructions
-					instructionsValues[i][0]=Double.valueOf(map.get(str).getN())+getRandomDouble();
-				}
-			}
-			System.out.println("\n End Row \n ");
-			i++;
-		}
-
-		System.out.println("Values of paramsMatrix : "+paramValues+"\n");
-		System.out.println("Values of instructionsMatrix : "+instructionsValues +"\n");
-
-
-		Matrix paramMatrix = new Matrix(paramValues);
-
-		Matrix instructionsMatrix = new Matrix(instructionsValues);
-
-		System.out.println("Num linhas paramMatrix : "+paramMatrix.getNrows()+ " Num colunas paramMatrix : "+paramMatrix.getNcols()+"\n");
-		System.out.println("Num linhas instructionsMatrix : "+instructionsMatrix.getNrows()+ " Num colunas paramMatrix : "+instructionsMatrix.getNcols()+"\n");
-
-		MultiLinear ml = new MultiLinear(paramMatrix, instructionsMatrix);
-		Matrix betas = ml.calculate();
-
-		System.out.println("\n--- Values obtained for the betas ---");
-		long[] betaValues =new long[betas.getNrows()];
-		for(int k=0;k<betas.getNrows();k++){
-			Double num = betas.getValueAt(k,0);
-			System.out.println("b"+k+" : "+num.longValue());
-			betaValues[k]=num.longValue();
-		}
-		System.out.println("--- End of betas ---\n");
-
-		long result = betaValues[0]+betaValues[1]*(800*400)+betaValues[2]*(800*400)+betaValues[3]*(60*60);
-		System.out.println("Result : "+result+"\n");
-		System.out.println("Real Result : 2789915305");
-
-		// will return Estimate Num Instructions
-		return 0;
-	}
 
 	public static void healthCheck() throws Exception{
 		HashSet<String> ipsRetrieved = getInstancesIps();
@@ -198,6 +130,120 @@ public class LoadBalancer {
 		return ips;
 	}
 
+	public static long getNumEstimatedInstructions() throws NoSquareException{
+		int numParameters = 3;
+		List<Map<String,AttributeValue>> list = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params").getItems();
+		double[][] paramValues = new double [list.size()][numParameters];
+		double[][] instructionsValues = new double [list.size()][1];
+		int i=0;
+		for(Map<String,AttributeValue> map : list){
+			for(String str : map.keySet()){
+				if(str.equals("id") || str.equals("file")){
+					continue;
+				}
+				else if (str.equals("sc") || str.equals("sr")){
+					if(paramValues[i][0] != 0){
+						paramValues[i][0]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+					else{
+						paramValues[i][0]=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+				}
+				else if(str.equals("wc") || str.equals("wr")){
+					if(paramValues[i][1] != 0){
+						paramValues[i][1]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+					else{
+						paramValues[i][1]=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+				}
+				else if(str.equals("coff") || str.equals("roff")){
+					if(paramValues[i][2]!= 0){
+						paramValues[i][2]*=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+					else{
+						paramValues[i][2]=Double.valueOf(map.get(str).getN())+getRandomDouble();
+					}
+				}
+				else{
+					// add number of instructions
+					instructionsValues[i][0]=Long.parseLong(map.get(str).getN())+getRandomDouble();
+				}
+			}
+			i++;
+		}
+
+		Matrix paramMatrix = new Matrix(paramValues);
+		Matrix instructionsMatrix = new Matrix(instructionsValues);
+		MultiLinear ml = new MultiLinear(paramMatrix, instructionsMatrix);
+		Matrix betas = ml.calculate();
+
+		long result = getEstimatedValue(betas,-1);
+		System.out.println("Estimated Instructions = "+result+"\n");
+		System.out.println("Real Instructions = 4411947001\n");
+
+		// will return Estimate Num Instructions
+		return result;
+	}
+
+	public static long getEstimatedValue(Matrix betas,long estimatedInst){
+		double[] betaValues = new double[betas.getNrows()];
+		Double result = 0.0;
+		for(int k=0;k<betas.getNrows();k++){
+			betaValues[k]=betas.getValueAt(k,0);
+		}
+
+		if(estimatedInst == -1){
+			long sc = paramsMap.get("sc");
+			long sr = paramsMap.get("sr");
+			long wc = paramsMap.get("wc");
+			long wr = paramsMap.get("wr");
+			long coff = paramsMap.get("coff");
+			long roff = paramsMap.get("roff");
+
+			result = betaValues[0]+betaValues[1]*(sc*sr)+betaValues[2]*(wc*wr)+betaValues[3]*(coff*roff);
+		}
+
+		else{
+			result = betaValues[0]+betaValues[1]*estimatedInst;
+		}
+
+		return result.longValue();
+	}
+
+	public static void getParams(String query){
+		String[] params = query.split("&");
+		int i=0;
+		for (String param : params){
+			String value = param.split("=")[1];
+			if(i == 0){
+				String modelNum = value.split("test0")[1];
+				paramsMap.put("file",Long.parseLong(modelNum));
+			}
+			else{
+				if(i == 1){
+					paramsMap.put("sc",Long.parseLong(value));
+				}
+				else if(i == 2){
+					paramsMap.put("sr",Long.parseLong(value));
+				}
+				else if(i == 3){
+					paramsMap.put("wc",Long.parseLong(value));
+				}
+				else if(i == 4){
+					paramsMap.put("wr",Long.parseLong(value));
+				}
+				else if(i == 5){
+					paramsMap.put("coff",Long.parseLong(value));
+				}
+				else if(i == 6){
+					paramsMap.put("roff",Long.parseLong(value));
+				}
+			}
+			i++;
+		}
+	}
+
 	public static double getRandomDouble() {
 		double leftLimit = 0.1;
 		double rightLimit = 0.2;
@@ -205,5 +251,33 @@ public class LoadBalancer {
 		return generatedDouble;
 	}
 
+	public static long getEstimatedTime(long instructions) throws NoSquareException{
+		int numParameters=1;
+		List<Map<String,AttributeValue>> list = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("times").getItems();
+		double[][] instructionsValues = new double [list.size()][numParameters];
+		double[][] timesValues = new double [list.size()][1];
 
+		int i=0;
+		for(Map<String,AttributeValue> map : list){
+			for(String str : map.keySet()){
+				if (str.equals("instructions")){
+					instructionsValues[i][0]=Long.parseLong(map.get(str).getN())+getRandomDouble();
+				}
+				else if(str.equals("time")){
+					timesValues[i][0]=Long.parseLong(map.get(str).getN())+getRandomDouble();
+				}
+			}
+			i++;
+		}
+
+		Matrix instructionsMatrix = new Matrix(instructionsValues);
+		Matrix paramMatrix = new Matrix(timesValues);
+		MultiLinear ml = new MultiLinear(instructionsMatrix, paramMatrix);
+		Matrix betas = ml.calculate();
+
+		long result = getEstimatedValue(betas,instructions);
+		System.out.println("Estimated Time = "+result+" s\n");
+		// will return Estimate Time
+		return result;
+	}
 }

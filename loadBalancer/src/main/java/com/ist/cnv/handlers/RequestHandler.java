@@ -1,19 +1,26 @@
 package com.ist.cnv.handlers;
 
+import com.ist.cnv.matrixes.*;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.*;
 import java.net.*;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+
 
 public class RequestHandler implements HttpHandler {
   static int TIMEOUT = 20;
+  static private ConcurrentHashMap<String,Long> paramsMap = new ConcurrentHashMap<String,Long>();
 
   @Override
   public void handle(HttpExchange t) throws IOException {
     String query = t.getRequestURI().getQuery();
     System.out.println("RequestHandler");
+    //getParams(query);
     String response = "";
     try{
       for(String ip : com.ist.cnv.LoadBalancer.getInstancesIps()){
@@ -44,4 +51,5 @@ public class RequestHandler implements HttpHandler {
       return "Time out";
     }
   }
+
 }
