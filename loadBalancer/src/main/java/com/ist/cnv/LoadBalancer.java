@@ -51,6 +51,8 @@ public class LoadBalancer {
 	static int TIMEOUT = 20;
 	static HashSet<String> ips = new HashSet<String>();
 	static private ConcurrentHashMap<String,Long> paramsMap = new ConcurrentHashMap<String,Long>();
+	static private ConcurrentHashMap<String,ConcurrentHashMap<Long,String>> IpsTimes = new ConcurrentHashMap<String,ConcurrentHashMap<Long,String>>();
+	static private long ID = 0L;
 
 
 	public static void main(String[] args) throws Exception,NoSquareException {
@@ -63,8 +65,13 @@ public class LoadBalancer {
 		System.out.println("Server is ready! \n");
 		String query = "http://cnv-lab-aws-lb-1328451237.eu-west-1.elb.amazonaws.com/r.html?f=test05&sc=1000&sr=500&wc=1000&wr=500&coff=40&roff=40";
 		getParams(query);
+		// Get DB data at every 15 s and save info
+		// check that DB has at least 3 rows else instructions = 0 and time = 0
 		long estimatedInstructions = getNumEstimatedInstructions();
-		getEstimatedTime(estimatedInstructions);
+		long time = 0L;
+		if (estimatedInstructions > 0){
+			time = getEstimatedTime(estimatedInstructions);
+		}
 	}
 
 	public static class CreateThreadRunnableExample implements Runnable {
@@ -294,5 +301,10 @@ public class LoadBalancer {
 		System.out.println("Estimated Time = "+result+" s\n");
 		// will return Estimate Time
 		return result;
+	}
+
+	public synchronized long getId() {
+		ID++;
+		return ID;
 	}
 }
