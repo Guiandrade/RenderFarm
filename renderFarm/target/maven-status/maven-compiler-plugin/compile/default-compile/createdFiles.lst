@@ -1,0 +1,5 @@
+com/ist/cnv/handlers/CheckHandler.class
+com/ist/cnv/handlers/DynamoDB.class
+com/ist/cnv/handlers/RetrieveImageHandler.class
+com/ist/cnv/handlers/RequestHandler.class
+com/ist/cnv/WebServer.class

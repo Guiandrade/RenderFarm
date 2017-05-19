@@ -1,23 +1,22 @@
 # !/bin/bash
 # test multi threaded server
 
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=1000&sr=500&wc=1000&wr=500&coff=40&roff=40"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=100&sr=50&wc=100&wr=50&coff=30&roff=30"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=200&sr=100&wc=200&wr=100&coff=50&roff=50"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=400&sr=200&wc=400&wr=200&coff=60&roff=60"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=600&sr=300&wc=600&wr=300&coff=70&roff=70"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=800&sr=400&wc=800&wr=400&coff=60&roff=60"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=300&sr=150&wc=300&wr=150&coff=30&roff=30"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=700&sr=350&wc=700&wr=350&coff=20&roff=20"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=850&sr=425&wc=850&wr=425&coff=30&roff=30"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=500&sr=250&wc=500&wr=250&coff=20&roff=20"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=900&sr=450&wc=900&wr=450&coff=30&roff=30"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=1100&sr=550&wc=1100&wr=550&coff=40&roff=40"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=150&sr=75&wc=150&wr=75&coff=50&roff=50"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=250&sr=125&wc=250&wr=125&coff=60&roff=60"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=350&sr=175&wc=350&wr=175&coff=70&roff=70"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=450&sr=225&wc=450&wr=225&coff=60&roff=60"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=550&sr=275&wc=550&wr=275&coff=50&roff=50"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=650&sr=325&wc=650&wr=325&coff=40&roff=40"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=750&sr=375&wc=750&wr=375&coff=30&roff=30"
-curl -X GET "52.19.72.224:8000/r.html?f=test05&sc=950&sr=575&wc=950&wr=575&coff=20&roff=20"
+while true
+do
+	curl -X GET "localhost:7556/r.html?f=test05&sc=100&sr=50&wc=100&wr=50&coff=40&roff=40" &
+	sleep 3
+	curl -X GET "localhost:7556/r.html?f=test05&sc=150&sr=75&wc=150&wr=75&coff=30&roff=30" &
+	sleep 3
+	curl -X GET "localhost:7556/r.html?f=test05&sc=180&sr=90&wc=180&wr=90&coff=50&roff=50" &
+	sleep 5
+	curl -X GET "localhost:7556/r.html?f=test05&sc=200&sr=100&wc=200&wr=100&coff=60&roff=60" &
+	sleep 2
+	curl -X GET "localhost:7556/r.html?f=test05&sc=250&sr=125&wc=250&wr=125&coff=70&roff=70" &
+	sleep 5
+	curl -X GET "localhost:7556/r.html?f=test05&sc=500&sr=250&wc=500&wr=250&coff=60&roff=60" &
+	sleep 3
+	curl -X GET "localhost:7556/r.html?f=test05&sc=400&sr=200&wc=400&wr=200&coff=30&roff=30" &
+	sleep 5
+	curl -X GET "localhost:7556/r.html?f=test05&sc=1000&sr=500&wc=1000&wr=500&coff=20&roff=20" &
+	sleep 10
+done

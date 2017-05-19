@@ -39,10 +39,8 @@ public class RequestHandler implements HttpHandler {
                 e.printStackTrace();
             }
             if(!(cmdResponse.equals("Error"))){
-                File file = new File(cmdResponse);
-                t.getResponseHeaders().set("Content-Type","image/bmp");
-                t.sendResponseHeaders(200, file.length());
-                Files.copy(file.toPath(), os);
+                t.sendResponseHeaders(200, cmdResponse.length());
+                os.write(cmdResponse.getBytes());
             }
             else{
                 t.sendResponseHeaders(200, response.length());
