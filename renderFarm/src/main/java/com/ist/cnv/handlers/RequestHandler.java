@@ -147,7 +147,7 @@ public class RequestHandler implements HttpHandler {
             long mSeconds = (date2.getTime()-date1.getTime());
             item = db.getInstance().newItemTimes(
                 id + " " + machine.split("\n")[0] + " " + date.toString(),
-                date.getTime().toString(),
+                String.valueOf(date.getTime()),
                 response.split("Instructions:   ")[1].split("\n")[0],
                 String.valueOf(mSeconds));
             db.getInstance().addItem(item,"times");

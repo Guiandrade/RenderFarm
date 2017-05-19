@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.io.*;
 import java.net.*;
+import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -65,6 +66,8 @@ public class LoadBalancer {
 		System.out.println("Server is ready! \n");
 		String query = "http://cnv-lab-aws-lb-1328451237.eu-west-1.elb.amazonaws.com/r.html?f=test05&sc=1000&sr=500&wc=1000&wr=500&coff=40&roff=40";
 		getParams(query);
+		Date dateee = new Date();
+		System.out.println(dateee.getTime() - 900000);
 		// Get DB data at every 15 s and save info
 		// check that DB has at least 3 rows else instructions = 0 and time = 0
 		long estimatedInstructions = getNumEstimatedInstructions();
