@@ -92,16 +92,16 @@ public class DynamoDB {
         System.out.println("Error Message: " + ace.getMessage());
     }
 
-    public static ScanResult scan(String tableName){
+    public static ScanResult scan(String tableName,String fileNum){
     try {
         // Scan items for runs with methods greater than 1
         HashMap<String, Condition> scanFilter = new HashMap<String, Condition>();
-        int timeWindow = 900000;
+        int timeWindow = 900000000; // VOLTAR A POR 15 MIN
         if(tableName.equals("params")){
             Condition condition = new Condition()
-            .withComparisonOperator(ComparisonOperator.GT.toString())
-            .withAttributeValueList(new AttributeValue().withN("1"));
-            scanFilter.put("instructions", condition);
+            .withComparisonOperator(ComparisonOperator.EQ.toString())
+            .withAttributeValueList(new AttributeValue().withN(fileNum));
+            scanFilter.put("file", condition);
         }
         else{
             Date date = new Date();
