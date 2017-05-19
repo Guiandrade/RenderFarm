@@ -7,6 +7,9 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import java.io.File;
+import java.nio.file.Files;
+import java.awt.image.BufferedImage;
 
 import java.io.*;
 import java.lang.Runtime;
@@ -15,7 +18,6 @@ import java.util.Date;
 
 public class RequestHandler implements HttpHandler {
     
-    private static String urlImage ="cnv-lab-aws-lb-1328451237.eu-west-1.elb.amazonaws.com/image?f=";
     private static int id = 0;
     private static String finished = "Error";
     private static String modelName = "";
@@ -26,6 +28,7 @@ public class RequestHandler implements HttpHandler {
         Date date1 = new Date();
         String response = "null";
         String query = t.getRequestURI().getQuery();
+        OutputStream os = t.getResponseBody();
             
         if (query != null){
             String command = getParams(query);
@@ -35,13 +38,22 @@ public class RequestHandler implements HttpHandler {
             }catch(Exception e){
                 e.printStackTrace();
             }
-            response = finished + "\n" + cmdResponse;
-            finished = "Error"; 
+            if(!(cmdResponse.equals("Error"))){
+                File file = new File(cmdResponse);
+                t.getResponseHeaders().set("Content-Type","image/bmp");
+                t.sendResponseHeaders(200, file.length());
+                Files.copy(file.toPath(), os);
+            }
+            else{
+                t.sendResponseHeaders(200, response.length());
+                os.write(response.getBytes());
+            }
         }
-
-        t.sendResponseHeaders(200, response.length());
-        OutputStream os = t.getResponseBody();
-        os.write(response.getBytes());
+        else{
+            response = "Error";
+            t.sendResponseHeaders(200, response.length());
+            os.write(response.getBytes());
+        }
         os.close();
     }
 
@@ -56,13 +68,14 @@ public class RequestHandler implements HttpHandler {
         String url = "";
         if(s.hasNext()){
             next = s.next();
-            url  = urlImage + modelName;
+            String outputPath ="/home/ec2-user/raytracer-master/outputs/";
+            String path = outputPath + modelName + ".bmp";
             String dynamicInfoSplitStr = "########## DYNAMIC INFORMATION #########";
             String finishedIn = next.split(dynamicInfoSplitStr)[0];
             createLog(dynamicInfoSplitStr + "\n" + inputParams + next.split(dynamicInfoSplitStr)[1], inputParams, date1);
-            finished = "Finished (Id: " + id + ") in: " + finishedIn.split(" ")[finishedIn.split(" ").length - 1];
+            //finished = "Finished (Id: " + id + ") in: " + finishedIn.split(" ")[finishedIn.split(" ").length - 1];
             id++;
-        	return "OK : Here is the resulting image link = "+url;
+        	return path;
         }
         else{
             return "Error";
