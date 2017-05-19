@@ -54,7 +54,7 @@ public class LoadBalancer {
 	static ConcurrentHashMap<String,List<Map<String,AttributeValue>>> listParams = new ConcurrentHashMap<String,List<Map<String,AttributeValue>>>();
 	static HashSet<String> ips = new HashSet<String>();
 	static private ConcurrentHashMap<String,Long> paramsMap = new ConcurrentHashMap<String,Long>();
-	static private ConcurrentHashMap<String,ConcurrentHashMap<Long,String>> ipsTimes = new ConcurrentHashMap<String,ConcurrentHashMap<Long,String>>();
+	static private ConcurrentHashMap<String,ConcurrentHashMap<Long,Long>> ipsTimes = new ConcurrentHashMap<String,ConcurrentHashMap<Long,Long>>();
 	static private long ID = 0L;
 
 
@@ -73,7 +73,7 @@ public class LoadBalancer {
 		while (true){
 			long estimatedInstructions = getNumEstimatedInstructions();
 			if (estimatedInstructions > 0){
-					time = getEstimatedTime(estimatedInstructions);
+				time = getEstimatedTime(estimatedInstructions);
 			}
 		}
 		// Check server with less time with processes and forward request
@@ -83,41 +83,41 @@ public class LoadBalancer {
 
 	public static class HealthCheckRunnable implements Runnable {
 
-	    public void run() {
+		public void run() {
 
-	    	while(true){
-	    		try{
-	    			healthCheck();
-		    		for(String str : ips){
-		    			System.out.println("IP: " + str);
-		    		}
-		    		System.out.println();
-		    		Thread.sleep(TIMEWINDOW);
-		    	}catch (Exception e){
-	    			e.printStackTrace();
-	    		}
-	    	}
-	    }
-    }
+			while(true){
+				try{
+					healthCheck();
+					for(String str : ips){
+						System.out.println("IP: " + str);
+					}
+					System.out.println();
+					Thread.sleep(TIMEWINDOW);
+				}catch (Exception e){
+					e.printStackTrace();
+				}
+			}
+		}
+	}
 
-		public static class InspectDBRunnable implements Runnable {
+	public static class InspectDBRunnable implements Runnable {
 
-		    public void run() {
-		    	while(true){
-		    		try{
-							int numFiles=5;
-							for (int i=0;i<numFiles;i++){
-								listParams.put(String.valueOf(i+1),com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params",String.valueOf(i+1)).getItems());
-							}
-							listParams.put("times",com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("times",null).getItems());
-							System.out.println("DATABASE DATA  UPDATED!");
-			    		Thread.sleep(TIMEWINDOW);
-			    	}catch (Exception e){
-		    			e.printStackTrace();
-		    		}
-		    	}
-		    }
-	    }
+		public void run() {
+			while(true){
+				try{
+					int numFiles=5;
+					for (int i=0;i<numFiles;i++){
+						listParams.put(String.valueOf(i+1),com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params",String.valueOf(i+1)).getItems());
+					}
+					listParams.put("times",com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("times",null).getItems());
+					System.out.println("DATABASE DATA  UPDATED!");
+					Thread.sleep(TIMEWINDOW);
+				}catch (Exception e){
+					e.printStackTrace();
+				}
+			}
+		}
+	}
 
 
 	public static void healthCheck() throws Exception{
@@ -301,6 +301,7 @@ public class LoadBalancer {
 	}
 
 	public static double getRandomDouble() {
+		// to avoid null determinant when making regression
 		double leftLimit = 0.1;
 		double rightLimit = 0.2;
 		double generatedDouble = leftLimit + new Random().nextDouble() * (rightLimit - leftLimit);
@@ -311,8 +312,8 @@ public class LoadBalancer {
 		int numParameters=1;
 		List<Map<String,AttributeValue>> listTimes;
 		if (!listParams.containsKey("times")){
-			 System.out.println("Not enough Values to estimate Time!\n");
-			 return 0L;
+			System.out.println("Not enough Values to estimate Time!\n");
+			return 0L;
 		}
 		listTimes = listParams.get("times");
 		if(listTimes.size() == 0){return 0L;}
@@ -343,20 +344,69 @@ public class LoadBalancer {
 		return result;
 	}
 
-	public void sendRequest(long estimatedTime){
+	public static void sendRequest(long estimatedTime){
+		String serverIp;
 		if (ips.size() == ipsTimes.size()){
-
+			// same number of servers
+			serverIp = selectServerIp();
+			// Send to this ip
 		}
 		else if( ips.size() > ipsTimes.size()){
 			// new server
+			for(String ip : ips){
+				if (!ipsTimes.containsKey(ip)){
+					ConcurrentHashMap<Long,Long> ipTimes = new ConcurrentHashMap<Long,Long>();
+					ipTimes.put(getId(),estimatedTime);
+					ipsTimes.put(ip,ipTimes);
+					serverIp = ip;
+					// Send to this ip
+				}
+			}
 
 		}
 		else{
 			// server(s) disconnected
+			for(String ip : ipsTimes.keySet()){
+				if(!ips.contains(ip)){
+					ipsTimes.remove(ip);
+					break;
+				}
+				serverIp = selectServerIp();
+				// Send to this ip
+			}
 		}
 	}
 
-	public synchronized long getId() {
+	public static String selectServerIp(){
+		ConcurrentHashMap<String,Long> timeProcesses = new ConcurrentHashMap<String,Long>();
+		for(String ip : ipsTimes.keySet()){
+			for(Long id : ipsTimes.get(ip).keySet()){
+				Date date = new Date();
+				if (ipsTimes.get(ip).get(id) <= date.getTime()){
+					ipsTimes.get(ip).remove(id);
+				}
+				else{
+					long old = timeProcesses.get(ip);
+					timeProcesses.put(ip,old+ipsTimes.get(ip).get(id));
+				}
+			}
+		}
+		long shortestTime = 0L;
+		String serverIp="";
+		for (String ip : timeProcesses.keySet()){
+			if (shortestTime == 0L){
+				shortestTime = timeProcesses.get(ip);
+				serverIp=ip;
+			}
+			else if (shortestTime > timeProcesses.get(ip)){
+				shortestTime=timeProcesses.get(ip);
+				serverIp=ip;
+			}
+		}
+		return serverIp;
+	}
+
+	public static synchronized long getId() {
 		ID++;
 		return ID;
 	}
