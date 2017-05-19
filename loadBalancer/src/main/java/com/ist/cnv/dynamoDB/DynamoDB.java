@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Date;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
@@ -95,10 +96,20 @@ public class DynamoDB {
     try {
         // Scan items for runs with methods greater than 1
         HashMap<String, Condition> scanFilter = new HashMap<String, Condition>();
-        Condition condition = new Condition()
+        int timeWindow = 900000;
+        if(tableName.equals("params")){
+            Condition condition = new Condition()
             .withComparisonOperator(ComparisonOperator.GT.toString())
             .withAttributeValueList(new AttributeValue().withN("1"));
-        scanFilter.put("instructions", condition);
+            scanFilter.put("instructions", condition);
+        }
+        else{
+            Date date = new Date();
+            Condition condition = new Condition()
+            .withComparisonOperator(ComparisonOperator.GT.toString())
+            .withAttributeValueList(new AttributeValue().withN(String.valueOf(date.getTime() - timeWindow)));
+            scanFilter.put("date", condition);
+        }
         ScanRequest scanRequest = new ScanRequest(tableName).withScanFilter(scanFilter);
         ScanResult scanResult = dynamoDB.scan(scanRequest);
         return scanResult;

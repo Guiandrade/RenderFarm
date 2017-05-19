@@ -144,12 +144,12 @@ public class RequestHandler implements HttpHandler {
             db.getInstance().addItem(item,"params");
 
             Date date2 = new Date();
-            long seconds = (date2.getTime()-date1.getTime())/1000;
+            long mSeconds = (date2.getTime()-date1.getTime());
             item = db.getInstance().newItemTimes(
                 id + " " + machine.split("\n")[0] + " " + date.toString(),
-                date.toString(),
+                date.getTime().toString(),
                 response.split("Instructions:   ")[1].split("\n")[0],
-                String.valueOf(seconds));
+                String.valueOf(mSeconds));
             db.getInstance().addItem(item,"times");
 
             String data = "Thread (id: " + id + ") || Machine: " + machine + " " + date.toString() + "\n\n" + response + "\n\n";
