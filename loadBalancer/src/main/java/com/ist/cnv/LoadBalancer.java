@@ -50,6 +50,9 @@ public class LoadBalancer {
 
 	static AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 	static int TIMEOUT = 20;
+	static int TIMEWINDOW= 1000;
+	static List<Map<String,AttributeValue>> listParams= new  ArrayList<Map<String,AttributeValue>>();
+	static List<Map<String,AttributeValue>> listTimes= new  ArrayList<Map<String,AttributeValue>>();
 	static HashSet<String> ips = new HashSet<String>();
 	static private ConcurrentHashMap<String,Long> paramsMap = new ConcurrentHashMap<String,Long>();
 	static private ConcurrentHashMap<String,ConcurrentHashMap<Long,String>> IpsTimes = new ConcurrentHashMap<String,ConcurrentHashMap<Long,String>>();
@@ -62,22 +65,24 @@ public class LoadBalancer {
 		server.createContext("/image", new RetrieveImageHandler());
 		server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool()); //server will run in parallel, non-limited Executor.
 		server.start();
-		new Thread(new CreateThreadRunnableExample()).start();
+		new Thread(new HealthCheckRunnable()).start();
+		new Thread(new InspectDBRunnable()).start();
 		System.out.println("Server is ready! \n");
 		String query = "http://cnv-lab-aws-lb-1328451237.eu-west-1.elb.amazonaws.com/r.html?f=test05&sc=1000&sr=500&wc=1000&wr=500&coff=40&roff=40";
 		getParams(query);
-		Date dateee = new Date();
-		System.out.println(dateee.getTime() - 900000);
-		// Get DB data at every 15 s and save info
-		// check that DB has at least 3 rows else instructions = 0 and time = 0
-		long estimatedInstructions = getNumEstimatedInstructions();
 		long time = 0L;
-		if (estimatedInstructions > 0){
-			time = getEstimatedTime(estimatedInstructions);
+		while (true){
+			long estimatedInstructions = getNumEstimatedInstructions();
+			if (estimatedInstructions > 0){
+					time = getEstimatedTime(estimatedInstructions);
+			}
 		}
+		// Check server with less time with processes and forward request
+
+
 	}
 
-	public static class CreateThreadRunnableExample implements Runnable {
+	public static class HealthCheckRunnable implements Runnable {
 
 	    public void run() {
 
@@ -88,13 +93,30 @@ public class LoadBalancer {
 		    			System.out.println("IP: " + str);
 		    		}
 		    		System.out.println();
-		    		Thread.sleep(15000);
+		    		Thread.sleep(TIMEWINDOW);
 		    	}catch (Exception e){
 	    			e.printStackTrace();
-	    		}	
+	    		}
 	    	}
 	    }
     }
+
+		public static class InspectDBRunnable implements Runnable {
+
+		    public void run() {
+
+		    	while(true){
+		    		try{
+							listParams = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params").getItems();
+							listTimes = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("times").getItems();
+							System.out.println("DATABASE DATA  UPDATED!");
+			    		Thread.sleep(TIMEWINDOW);
+			    	}catch (Exception e){
+		    			e.printStackTrace();
+		    		}
+		    	}
+		    }
+	    }
 
 
 	public static void healthCheck() throws Exception{
@@ -157,11 +179,13 @@ public class LoadBalancer {
 
 	public static long getNumEstimatedInstructions() throws NoSquareException{
 		int numParameters = 3;
-		List<Map<String,AttributeValue>> list = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params").getItems();
-		double[][] paramValues = new double [list.size()][numParameters];
-		double[][] instructionsValues = new double [list.size()][1];
+		if (listParams.size()<6){
+			return 0L;
+		}
+		double[][] paramValues = new double [listParams.size()][numParameters];
+		double[][] instructionsValues = new double [listParams.size()][1];
 		int i=0;
-		for(Map<String,AttributeValue> map : list){
+		for(Map<String,AttributeValue> map : listParams){
 			for(String str : map.keySet()){
 				if(str.equals("id") || str.equals("file")){
 					continue;
@@ -278,12 +302,15 @@ public class LoadBalancer {
 
 	public static long getEstimatedTime(long instructions) throws NoSquareException{
 		int numParameters=1;
-		List<Map<String,AttributeValue>> list = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("times").getItems();
-		double[][] instructionsValues = new double [list.size()][numParameters];
-		double[][] timesValues = new double [list.size()][1];
+		if (listTimes.size() == 0 ){
+			System.out.println("Not enough Values to estimate Time!\n");
+			 return 0L;
+		}
+		double[][] instructionsValues = new double [listTimes.size()][numParameters];
+		double[][] timesValues = new double [listTimes.size()][1];
 
 		int i=0;
-		for(Map<String,AttributeValue> map : list){
+		for(Map<String,AttributeValue> map : listTimes){
 			for(String str : map.keySet()){
 				if (str.equals("instructions")){
 					instructionsValues[i][0]=Long.parseLong(map.get(str).getN())+getRandomDouble();
@@ -301,7 +328,7 @@ public class LoadBalancer {
 		Matrix betas = ml.calculate();
 
 		long result = getEstimatedValue(betas,instructions);
-		System.out.println("Estimated Time = "+result+" s\n");
+		System.out.println("Estimated Time = "+result+" ms\n");
 		// will return Estimate Time
 		return result;
 	}
