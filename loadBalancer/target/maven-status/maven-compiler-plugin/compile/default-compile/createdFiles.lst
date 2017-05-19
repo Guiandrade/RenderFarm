@@ -6,5 +6,6 @@ com/ist/cnv/handlers/RequestHandler.class
 com/ist/cnv/LoadBalancer.class
 com/ist/cnv/matrixes/NoSquareException.class
 com/ist/cnv/dynamoDB/DynamoDB.class
-com/ist/cnv/LoadBalancer$CreateThreadRunnableExample.class
+com/ist/cnv/LoadBalancer$HealthCheckRunnable.class
+com/ist/cnv/LoadBalancer$InspectDBRunnable.class
 com/ist/cnv/handlers/RetrieveImageHandler.class
