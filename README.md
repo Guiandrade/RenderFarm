@@ -3,13 +3,19 @@ A web  server  elastic  cluster  that  renders  3D  images  on-demand by executi
 
 Here's how to run the project:
 
-1. Create a Load Balancer in Amazon AWS - EC2 Management Console;
-2. Create a new linux instance in Amazon AWS - EC2 Management Console;
-3. SSH into the created instance and do the following 3 steps in it:
-    1. Copy and unzip the "checkpoint_project.zip" file to the instance;
-    2. Run the "scriptSetup.sh" placed in /home/ec2-user/server;
+1. Create a new linux instance in Amazon AWS - EC2 Management Console;
+2. SSH into the created instance and do the following 3 steps in it:
+    1. Copy and unzip the "project.zip" file to the instance;
+    2. Run the "webServerScriptSetup.sh" placed in /home/ec2-user;
     3. Restart the machine;
+4. Create an AMI image of that instance in Amazon AWS - EC2 Management Console and name it "Web Server";
 
-4. Create an AMI image of that instance in Amazon AWS - EC2 Management Console;
-5. Create an Auto Scaler in Amazon AWS - EC2 Management Console using that AMI image and associated with the Load Balancer created previously;
-6. Run locally the "scriptTestServer.sh".
+5. Create a new linux instance in Amazon AWS - EC2 Management Console;
+6. SSH into the created instance and do the following 3 steps in it:
+    1. Copy and unzip the "project.zip" file to the instance;
+    2. Run the "loadBalancerScriptSetup.sh" placed in /home/ec2-user;
+    3. Restart the machine;
+7. Create an AMI image of that instance in Amazon AWS - EC2 Management Console and name it "Load Balancer";
+
+8. Create an Auto Scaler in Amazon AWS - EC2 Management Console using that AMI image and associated with the "Load Balancer" created previously;
+9. Run locally the "scrpt.sh".
