@@ -88,7 +88,7 @@ public class LoadBalancer {
 		    		Thread.sleep(15000);
 		    	}catch (Exception e){
 	    			e.printStackTrace();
-	    		}	
+	    		}
 	    	}
 	    }
     }
@@ -276,6 +276,10 @@ public class LoadBalancer {
 	public static long getEstimatedTime(long instructions) throws NoSquareException{
 		int numParameters=1;
 		List<Map<String,AttributeValue>> list = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("times").getItems();
+		if (list.size() == 0 ){
+			System.out.println("Not enough Values to estimate Time!\n");
+			 return 0L;
+		}
 		double[][] instructionsValues = new double [list.size()][numParameters];
 		double[][] timesValues = new double [list.size()][1];
 
