@@ -51,11 +51,10 @@ public class LoadBalancer {
 	static AWSCredentials credentials = new ProfileCredentialsProvider().getCredentials();
 	static int TIMEOUT = 20;
 	static int TIMEWINDOW= 1000;
-	static List<Map<String,AttributeValue>> listParams= new  ArrayList<Map<String,AttributeValue>>();
-	static List<Map<String,AttributeValue>> listTimes= new  ArrayList<Map<String,AttributeValue>>();
+	static ConcurrentHashMap<String,List<Map<String,AttributeValue>>> listParams = new ConcurrentHashMap<String,List<Map<String,AttributeValue>>>();
 	static HashSet<String> ips = new HashSet<String>();
 	static private ConcurrentHashMap<String,Long> paramsMap = new ConcurrentHashMap<String,Long>();
-	static private ConcurrentHashMap<String,ConcurrentHashMap<Long,String>> IpsTimes = new ConcurrentHashMap<String,ConcurrentHashMap<Long,String>>();
+	static private ConcurrentHashMap<String,ConcurrentHashMap<Long,String>> ipsTimes = new ConcurrentHashMap<String,ConcurrentHashMap<Long,String>>();
 	static private long ID = 0L;
 
 
@@ -104,11 +103,13 @@ public class LoadBalancer {
 		public static class InspectDBRunnable implements Runnable {
 
 		    public void run() {
-
 		    	while(true){
 		    		try{
-							listParams = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params").getItems();
-							listTimes = com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("times").getItems();
+							int numFiles=5;
+							for (int i=0;i<numFiles;i++){
+								listParams.put(String.valueOf(i+1),com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("params",String.valueOf(i+1)).getItems());
+							}
+							listParams.put("times",com.ist.cnv.dynamoDB.DynamoDB.getInstance().scan("times",null).getItems());
 							System.out.println("DATABASE DATA  UPDATED!");
 			    		Thread.sleep(TIMEWINDOW);
 			    	}catch (Exception e){
@@ -178,14 +179,20 @@ public class LoadBalancer {
 	}
 
 	public static long getNumEstimatedInstructions() throws NoSquareException{
-		int numParameters = 3;
-		if (listParams.size()<6){
-			return 0L;
+		int numFiles=5;
+		String filePos = String.valueOf(paramsMap.get("file").intValue());
+		List<Map<String,AttributeValue>> listParamsFile;
+		if(listParams.containsKey(filePos)){
+			listParamsFile = listParams.get(filePos);
 		}
-		double[][] paramValues = new double [listParams.size()][numParameters];
-		double[][] instructionsValues = new double [listParams.size()][1];
+		else{return 0L;} // not enough values from given file
+		if (listParamsFile.size()<6){return 0L;} // not enough values to make regression
+		int numParameters = 3;
+		double[][] paramValues = new double [listParamsFile.size()][numParameters];
+		double[][] instructionsValues = new double [listParamsFile.size()][1];
 		int i=0;
-		for(Map<String,AttributeValue> map : listParams){
+
+		for(Map<String,AttributeValue> map : listParamsFile){
 			for(String str : map.keySet()){
 				if(str.equals("id") || str.equals("file")){
 					continue;
@@ -302,10 +309,13 @@ public class LoadBalancer {
 
 	public static long getEstimatedTime(long instructions) throws NoSquareException{
 		int numParameters=1;
-		if (listTimes.size() == 0 ){
-			System.out.println("Not enough Values to estimate Time!\n");
+		List<Map<String,AttributeValue>> listTimes;
+		if (!listParams.containsKey("times")){
+			 System.out.println("Not enough Values to estimate Time!\n");
 			 return 0L;
 		}
+		listTimes = listParams.get("times");
+		if(listTimes.size() == 0){return 0L;}
 		double[][] instructionsValues = new double [listTimes.size()][numParameters];
 		double[][] timesValues = new double [listTimes.size()][1];
 
@@ -331,6 +341,19 @@ public class LoadBalancer {
 		System.out.println("Estimated Time = "+result+" ms\n");
 		// will return Estimate Time
 		return result;
+	}
+
+	public void sendRequest(long estimatedTime){
+		if (ips.size() == ipsTimes.size()){
+
+		}
+		else if( ips.size() > ipsTimes.size()){
+			// new server
+
+		}
+		else{
+			// server(s) disconnected
+		}
 	}
 
 	public synchronized long getId() {
