@@ -10,7 +10,7 @@ import java.util.Date;
 public class Instrument {
     
     private static PrintStream out = null;
-    private static double i_count = 0, b_count = 0, m_count = 0;public static double grand_total = 0;
+    private static long i_count = 0, b_count = 0, m_count = 0;public static double grand_total = 0;
     public static double const_total = 0;
     public static double field_total = 0;
     public static double interface_total = 0;

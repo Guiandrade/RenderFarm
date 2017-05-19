@@ -96,9 +96,10 @@ public class DynamoDB {
         return item;
     }
 
-    public static Map<String, AttributeValue> newItemTimes(String id, String instructions, String time) {
+    public static Map<String, AttributeValue> newItemTimes(String id, String date, String instructions, String time) {
         Map<String, AttributeValue> item = new HashMap<String, AttributeValue>();
         item.put("id", new AttributeValue(id));
+        item.put("date", new AttributeValue(date));
         item.put("instructions", new AttributeValue().withN(instructions));
         item.put("time", new AttributeValue().withN(time));
         return item;
