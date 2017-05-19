@@ -61,8 +61,8 @@ public class LoadBalancer {
 		server.createContext("/image", new RetrieveImageHandler());
 		server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool()); //server will run in parallel, non-limited Executor.
 		server.start();
-		new Thread(new CreateThreadRunnableExample()).start();
 		System.out.println("Server is ready! \n");
+		healthCheck();
 		String query = "http://cnv-lab-aws-lb-1328451237.eu-west-1.elb.amazonaws.com/r.html?f=test05&sc=1000&sr=500&wc=1000&wr=500&coff=40&roff=40";
 		getParams(query);
 		// Get DB data at every 15 s and save info
@@ -74,42 +74,26 @@ public class LoadBalancer {
 		}
 	}
 
-	public static class CreateThreadRunnableExample implements Runnable {
-
-	    public void run() {
-
-	    	while(true){
-	    		try{
-	    			healthCheck();
-		    		for(String str : ips){
-		    			System.out.println("IP: " + str);
-		    		}
-		    		System.out.println();
-		    		Thread.sleep(15000);
-		    	}catch (Exception e){
-	    			e.printStackTrace();
-	    		}	
-	    	}
-	    }
-    }
-
 
 	public static void healthCheck() throws Exception{
 		HashSet<String> ipsRetrieved = getInstancesIps();
-		HashSet<String> runningIps = new HashSet<String>();
 		for(String ip : ipsRetrieved){
 			String response = executePost("http://"+ip+":8000/test");
 			if((response.split("\n")[0]).equals("Command OK: Load Balancer Health Check / Keep Alive ")){
-				runningIps.add(ip);
+				ips.add(ip);
+				System.out.println("Ip: "+ip+ " added!");
+			}
+			if(response.equals("Time out")){
+				System.out.println("Time out!");
 			}
 		}
-		ips = runningIps;
 	}
 
 	public static String executePost(String url) throws Exception {
 		URL conn = new URL(url);
 		URLConnection yc = conn.openConnection();
 		try{
+			yc.setConnectTimeout(TIMEOUT * 1000);
 			BufferedReader in = new BufferedReader(new InputStreamReader(yc.getInputStream()));
 			String inputLine;
 			String response = "";
@@ -140,6 +124,7 @@ public class LoadBalancer {
 				if(instance.getState().getName().equals("running")){
 					if(instance.getSecurityGroups().get(0).getGroupName().equals("CNV-ssh+http")){
 						ips.add(instance.getPublicIpAddress());
+						System.out.println(instance.getPublicIpAddress());
 					}
 				}
 			}
