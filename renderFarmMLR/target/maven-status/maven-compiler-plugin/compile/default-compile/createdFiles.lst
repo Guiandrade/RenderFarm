@@ -1,6 +1,0 @@
-com/ist/cnv/Main.class
-com/ist/cnv/Matrix.class
-com/ist/cnv/MultiLinear.class
-com/ist/cnv/IllegalDimensionException.class
-com/ist/cnv/NoSquareException.class
-com/ist/cnv/MatrixMathematics.class
